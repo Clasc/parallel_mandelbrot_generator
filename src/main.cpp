@@ -2,7 +2,9 @@
 
 int main(int argc, char const *argv[])
 {
-    /* code */
-    printf("Hello world!");
+    auto x = 5;
+    auto y = 23;
+    auto z = x + y;
+    printf("%i \n", z);
     return 0;
 }
