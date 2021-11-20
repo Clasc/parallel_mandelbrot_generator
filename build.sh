@@ -1,3 +1,2 @@
 #usr/bin/bash
-
-gcc src/*cpp -o out/app
+g++ -O2 -fopenmp src/a2-openmp.cpp -o out/openmp
