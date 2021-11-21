@@ -105,47 +105,37 @@ int mandelbrot(Image &image, double ratio = 0.15)
     ratio /= 10.0;
     // reduction: gives each thread a private pixels_inside variable that is summed at the end
     int pixels_inside = 0;
+
+#pragma omp parallel reduction(+ \
+                               : pixels_inside) shared(w, h, channels, image, ratio)
     {
-#pragma omp parallel
-#pragma omp taskgroup
+        vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
+        complex<double> c;
+        int threads = omp_get_num_threads();
+        int rank = omp_get_thread_num();
+        int startH, endH;
+        tie(startH, endH) = getRange(h, rank, threads);
+        for (int j = startH; j < endH; j++)
         {
-            int threads = omp_get_num_threads();
-            int rank = omp_get_thread_num();
-            vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
-            complex<double> c;
-
-            int startH, endH;
-            tie(startH, endH) = getRange(h, rank, threads);
-
-            // int startW, endW;
-            // tie(startW, endW) = getRange(w, rank, threads);
-
-            for (int j = startH; j < endH; j++)
+            // pixel to be passed to the mandelbrot function
+            for (int i = 0; i < w; i++)
             {
-                // pixel to be passed to the mandelbrot function
-                for (int i = 0; i < w; i++)
-                {
-#pragma omp task shared(pixels_inside) private(pixel, c)
-                    {
-                        double dx = (double)i / (w)*ratio - 1.10;
-                        double dy = (double)j / (h)*0.1 - 0.35;
 
-                        c = complex<double>(dx, dy);
+                double dx = (double)i / (w)*ratio - 1.10;
+                double dy = (double)j / (h)*0.1 - 0.35;
 
-                        if (mandelbrot_kernel(c, pixel)) // the actual mandelbrot kernel
-#pragma omp critical
-                        {
-                            pixels_inside++;
-                        }
+                c = complex<double>(dx, dy);
 
-                        // apply to the image
-                        for (int ch = 0; ch < channels; ch++)
-                            image(ch, j, i) = pixel[ch];
-                    }
-                }
+                if (mandelbrot_kernel(c, pixel)) // the actual mandelbrot kernel
+                    pixels_inside++;
+
+                // apply to the image
+                for (int ch = 0; ch < channels; ch++)
+                    image(ch, j, i) = pixel[ch];
             }
         }
     }
+#pragma omp taskwait
     return pixels_inside;
 }
 
