@@ -6,9 +6,18 @@
 #include <cmath>
 #include <complex>
 #include <chrono>
+#include <omp.h>
 #include <functional>
 #include "lib/a2/a2-helpers.hpp"
 using namespace std;
+
+tuple<int, int> getRange(int max_value, int block_id, int threads)
+{
+    int block_size = max_value / threads;
+    int start = block_id * block_size;
+    int end = start + block_size;
+    return make_tuple(start, end);
+}
 
 void foreach (Image const &image, function<void(int, int, Image image)> function)
 {
@@ -82,61 +91,79 @@ bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
  * Compute the Mandelbrot set for each pixel of a given image.
  * Image is the Image data structure for storing RGB image
  * The default value for ratio is 0.15.
- * 
+ *
  * @param[inout] image
  * @param[in] ratio
- * 
+ *
 */
 int mandelbrot(Image &image, double ratio = 0.15)
 {
-    int h = image.height;
-    int w = image.width;
+
     int channels = image.channels;
+    int w = image.width;
+    int h = image.height;
     ratio /= 10.0;
-
+    // reduction: gives each thread a private pixels_inside variable that is summed at the end
     int pixels_inside = 0;
-
-// reduction: gives each thread a private pixels_inside variable that is summed at the end
-#pragma omp parallel for reduction(+ \
-                                   : pixels_inside)
-    for (int j = 0; j < h; j++)
     {
-        // pixel to be passed to the mandelbrot function
-        vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
-        complex<double> c;
-        for (int i = 0; i < w; i++)
+#pragma omp parallel
+#pragma omp taskgroup
         {
-            double dx = (double)i / (w)*ratio - 1.10;
-            double dy = (double)j / (h)*0.1 - 0.35;
 
-            c = complex<double>(dx, dy);
+            int threads = omp_get_num_threads();
+            int rank = omp_get_thread_num();
+            vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
+            complex<double> c;
 
-            if (mandelbrot_kernel(c, pixel)) // the actual mandelbrot kernel
-                pixels_inside++;
+            int startH, endH;
+            tie(startH, endH) = getRange(h, rank, threads);
 
-            // apply to the image
-            for (int ch = 0; ch < channels; ch++)
-                image(ch, j, i) = pixel[ch];
+            // int startW, endW;
+            // tie(startW, endW) = getRange(w, rank, threads);
+
+            for (int j = startH; j < endH; j++)
+            {
+                // pixel to be passed to the mandelbrot function
+                for (int i = 0; i < w; i++)
+                {
+#pragma omp task shared(pixels_inside) private(pixel, c)
+                    {
+                        double dx = (double)i / (w)*ratio - 1.10;
+                        double dy = (double)j / (h)*0.1 - 0.35;
+
+                        c = complex<double>(dx, dy);
+
+                        if (mandelbrot_kernel(c, pixel)) // the actual mandelbrot kernel
+#pragma omp critical
+                        {
+                            pixels_inside++;
+                        }
+
+                        // apply to the image
+                        for (int ch = 0; ch < channels; ch++)
+                            image(ch, j, i) = pixel[ch];
+                    }
+                }
+            }
         }
     }
-
     return pixels_inside;
 }
 
 /**
  * 2D Convolution
  * src is the source Image to which we apply the filter.
- * Resulting image is saved in dst. The size of the kernel is 
- * given with kernel_width (must be odd number). Sigma represents 
+ * Resulting image is saved in dst. The size of the kernel is
+ * given with kernel_width (must be odd number). Sigma represents
  * the standard deviation of the filter. The number of iterations
  * is given with the nstep (default=1)
- * 
+ *
  * @param[in] src
  * @param[out] dst
  * @param[in] kernel_width
  * @param[in] sigma
  * @param[in] nsteps
- * 
+ *
 */
 void convolution_2d(Image &src, Image &dst, int kernel_width, double sigma, int nsteps = 1)
 {
