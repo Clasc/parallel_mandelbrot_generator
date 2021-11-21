@@ -58,12 +58,12 @@ vector<gradient> const gradients = {
 bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
 {
     int max_iterations = 2048, iteration = 0;
+
     complex<double> z(0, 0);
 
-    while (abs(z) <= 4 && (iteration < max_iterations))
+    for (; iteration < max_iterations && abs(z) <= 4; iteration++)
     {
         z = z * z + c;
-        iteration++;
     }
 
     // now the computation of the color gradient and interpolation
