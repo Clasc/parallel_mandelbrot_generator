@@ -73,13 +73,13 @@ bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
     {
         z = z * z + c;
     }
-
     // now the computation of the color gradient and interpolation
-    double length = sqrt(z.real() * z.real() + z.imag() * z.imag());
-    long double m = (iteration + 1 - log(length) / log(2.0));
+    double log_len = log(sqrt(z.real() * z.real() + z.imag() * z.imag()));
+    double log_2 = log(2.0);
+    long double m = (iteration + 1 - log_len / log_2);
     double q = m / (double)max_iterations;
 
-    q = iteration + 1 - log(log(length)) / log(2.0);
+    q = iteration + 1 - log(log_len) / log_2;
     q /= max_iterations;
 
     colorize(pixel, q, iteration, gradients);
@@ -109,7 +109,6 @@ int mandelbrot(Image &image, double ratio = 0.15)
 #pragma omp parallel
 #pragma omp taskgroup
         {
-
             int threads = omp_get_num_threads();
             int rank = omp_get_thread_num();
             vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
