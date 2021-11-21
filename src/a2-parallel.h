@@ -194,7 +194,7 @@ void convolution_2d(Image &src, Image &dst, int kernel_width, double sigma, int 
     }
 }
 
-void generate(Image image, int n_steps = 20, char *outputName = "Mandelbrot_parallel.ppm")
+void generate(Image &image, int n_steps = 20, char *outputName = "Mandelbrot_parallel.ppm")
 {
     Image filtered_image(image.channels, image.height, image.width);
     auto ratio = image.width / (double)image.height;
