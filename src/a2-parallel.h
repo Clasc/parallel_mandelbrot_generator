@@ -60,7 +60,6 @@ bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
     int max_iterations = 2048, iteration = 0;
 
     complex<double> z(0, 0);
-
     for (; iteration < max_iterations && abs(z) <= 4; iteration++)
     {
         z = z * z + c;
@@ -90,7 +89,6 @@ bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
 */
 int mandelbrot(Image &image, double ratio = 0.15)
 {
-    int i, j;
     int h = image.height;
     int w = image.width;
     int channels = image.channels;
@@ -98,13 +96,15 @@ int mandelbrot(Image &image, double ratio = 0.15)
 
     int pixels_inside = 0;
 
-    // pixel to be passed to the mandelbrot function
-    vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
-    complex<double> c;
-
-    for (j = 0; j < h; j++)
+// reduction: gives each thread a private pixels_inside variable that is summed at the end
+#pragma omp parallel for reduction(+ \
+                                   : pixels_inside)
+    for (int j = 0; j < h; j++)
     {
-        for (i = 0; i < w; i++)
+        // pixel to be passed to the mandelbrot function
+        vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
+        complex<double> c;
+        for (int i = 0; i < w; i++)
         {
             double dx = (double)i / (w)*ratio - 1.10;
             double dy = (double)j / (h)*0.1 - 0.35;
