@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "chrono": "cpp",
-        "cmath": "cpp"
-    }
+        "cmath": "cpp",
+        "complex": "cpp",
+        "functional": "cpp"
+    },
 }

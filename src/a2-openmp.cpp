@@ -1,12 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <tuple>
-#include <time.h>
-#include <cmath>
-#include <complex>
-#include <chrono>
-#include "lib/a2/a2-helpers.hpp"
+#include "a2-parallel.h"
 
 int main(int argc, char const *argv[])
 {
@@ -14,5 +6,6 @@ int main(int argc, char const *argv[])
     auto y = 23;
     auto z = x + y;
     printf("%i \n", z);
+    generate(Image(3, 1024, 1536));
     return 0;
 }
