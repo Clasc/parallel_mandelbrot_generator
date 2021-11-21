@@ -98,7 +98,6 @@ bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
 */
 int mandelbrot(Image &image, double ratio = 0.15)
 {
-
     int channels = image.channels;
     int w = image.width;
     int h = image.height;
@@ -106,8 +105,7 @@ int mandelbrot(Image &image, double ratio = 0.15)
     // reduction: gives each thread a private pixels_inside variable that is summed at the end
     int pixels_inside = 0;
 
-#pragma omp parallel reduction(+ \
-                               : pixels_inside) shared(w, h, channels, image, ratio)
+#pragma omp parallel shared(w, h, channels, image, ratio, pixels_inside)
     {
         vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
         complex<double> c;
@@ -120,18 +118,25 @@ int mandelbrot(Image &image, double ratio = 0.15)
             // pixel to be passed to the mandelbrot function
             for (int i = 0; i < w; i++)
             {
+#pragma omp task shared(w, h, channels, image, ratio, pixels_inside)
+                {
 
-                double dx = (double)i / (w)*ratio - 1.10;
-                double dy = (double)j / (h)*0.1 - 0.35;
+                    double dx = (double)i / (w)*ratio - 1.10;
+                    double dy = (double)j / (h)*0.1 - 0.35;
 
-                c = complex<double>(dx, dy);
+                    c = complex<double>(dx, dy);
 
-                if (mandelbrot_kernel(c, pixel)) // the actual mandelbrot kernel
-                    pixels_inside++;
+                    // the actual mandelbrot kernel
+                    if (mandelbrot_kernel(c, pixel))
+                    {
+#pragma omp atomic
+                        pixels_inside++;
+                    }
 
-                // apply to the image
-                for (int ch = 0; ch < channels; ch++)
-                    image(ch, j, i) = pixel[ch];
+                    // apply to the image
+                    for (int ch = 0; ch < channels; ch++)
+                        image(ch, j, i) = pixel[ch];
+                }
             }
         }
     }
