@@ -12,5 +12,14 @@
             "type": "shell",
             "command": "${workspaceFolder}/build.sh"
         },
+        {
+            "label": "test",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "type": "shell",
+            "command": "${workspaceFolder}/compare.sh"
+        }
     ]
 }
