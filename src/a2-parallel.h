@@ -11,27 +11,22 @@
 #include "lib/a2/a2-helpers.hpp"
 using namespace std;
 
-tuple<int, int> getRange(int max_value, int block_id, int threads)
-{
+tuple<int, int> getRange(int max_value, int block_id, int threads) {
     int block_size = max_value / threads;
     int start = block_id * block_size;
     int end = start + block_size;
     return make_tuple(start, end);
 }
 
-void foreach (Image const &image, function<void(int, int, Image image)> function)
-{
-    for (int j = 0; j < image.height; j++)
-    {
-        for (int i = 0; i < image.width; i++)
-        {
+void foreach(Image const& image, function<void(int, int, Image image)> function) {
+    for (int j = 0; j < image.height; j++) {
+        for (int i = 0; i < image.width; i++) {
             function(i, j, image);
         }
     }
 }
 
-double measure(function<void()> function)
-{
+double measure(function<void()> function) {
     auto t1 = chrono::high_resolution_clock::now();
     function();
     auto t2 = chrono::high_resolution_clock::now();
@@ -39,17 +34,14 @@ double measure(function<void()> function)
     return chrono::duration<double>(t2 - t1).count();
 }
 
-void safeImage(Image &image, const char *filename)
-{
+void safeImage(Image& image, const char* filename) {
     ofstream ofs(filename, std::ofstream::out);
     ofs << "P3" << std::endl;
     ofs << image.width << " " << image.height << std::endl;
     ofs << 255 << std::endl;
 
-    for (int j = 0; j < image.height; j++)
-    {
-        for (int i = 0; i < image.width; i++)
-        {
+    for (int j = 0; j < image.height; j++) {
+        for (int i = 0; i < image.width; i++) {
             ofs << " " << image(0, j, i) << " " << image(1, j, i) << " " << image(2, j, i) << std::endl;
         }
     }
@@ -61,16 +53,14 @@ vector<gradient> const gradients = {
     gradient({0, 0, 0}, {76, 57, 125}, 0.0, 0.010, 2000),
     gradient({76, 57, 125}, {255, 255, 255}, 0.010, 0.020, 2000),
     gradient({255, 255, 255}, {0, 0, 0}, 0.020, 0.050, 2000),
-    gradient({0, 0, 0}, {0, 0, 0}, 0.050, 1.0, 2000)};
+    gradient({0, 0, 0}, {0, 0, 0}, 0.050, 1.0, 2000) };
 
 // Test if point c belongs to the Mandelbrot set
-bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
-{
+bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) {
     int max_iterations = 2048, iteration = 0;
 
     complex<double> z(0, 0);
-    for (; iteration < max_iterations && abs(z) <= 4; iteration++)
-    {
+    for (; iteration < max_iterations && abs(z) <= 4; iteration++) {
         z = z * z + c;
     }
     // now the computation of the color gradient and interpolation
@@ -96,8 +86,7 @@ bool mandelbrot_kernel(complex<double> c, vector<int> &pixel)
  * @param[in] ratio
  *
 */
-int mandelbrot(Image &image, double ratio = 0.15)
-{
+int mandelbrot(Image& image, double ratio = 0.15) {
     int channels = image.channels;
     int w = image.width;
     int h = image.height;
@@ -105,31 +94,28 @@ int mandelbrot(Image &image, double ratio = 0.15)
     // reduction: gives each thread a private pixels_inside variable that is summed at the end
     int pixels_inside = 0;
 
-#pragma omp parallel shared(w, h, channels, image, ratio, pixels_inside)
+    #pragma omp parallel shared(w, h, channels, image, ratio, pixels_inside)
     {
-        vector<int> pixel = {0, 0, 0}; // red, green, blue (each range 0-255)
+        vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
         complex<double> c;
         int threads = omp_get_num_threads();
         int rank = omp_get_thread_num();
         int startH, endH;
         tie(startH, endH) = getRange(h, rank, threads);
-        for (int j = startH; j < endH; j++)
-        {
+        for (int j = startH; j < endH; j++) {
             // pixel to be passed to the mandelbrot function
-            for (int i = 0; i < w; i++)
-            {
-#pragma omp task shared(w, h, channels, image, ratio, pixels_inside)
+            for (int i = 0; i < w; i++) {
+                #pragma omp task shared(w, h, channels, image, ratio, pixels_inside)
                 {
 
                     double dx = (double)i / (w)*ratio - 1.10;
-                    double dy = (double)j / (h)*0.1 - 0.35;
+                    double dy = (double)j / (h) * 0.1 - 0.35;
 
                     c = complex<double>(dx, dy);
 
                     // the actual mandelbrot kernel
-                    if (mandelbrot_kernel(c, pixel))
-                    {
-#pragma omp atomic
+                    if (mandelbrot_kernel(c, pixel)) {
+                        #pragma omp atomic
                         pixels_inside++;
                     }
 
@@ -140,9 +126,10 @@ int mandelbrot(Image &image, double ratio = 0.15)
             }
         }
     }
-#pragma omp taskwait
+    #pragma omp taskwait
     return pixels_inside;
 }
+
 
 /**
  * 2D Convolution
@@ -159,8 +146,7 @@ int mandelbrot(Image &image, double ratio = 0.15)
  * @param[in] nsteps
  *
 */
-void convolution_2d(Image &src, Image &dst, int kernel_width, double sigma, int nsteps = 1)
-{
+void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) {
     int h = src.height;
     int w = src.width;
     int channels = src.channels;
@@ -168,31 +154,23 @@ void convolution_2d(Image &src, Image &dst, int kernel_width, double sigma, int 
     std::vector<std::vector<double>> kernel = get_2d_kernel(kernel_width, kernel_width, sigma);
 
     int displ = (kernel.size() / 2); // height==width!
-    for (int step = 0; step < nsteps; step++)
-    {
-        for (int ch = 0; ch < channels; ch++)
-        {
-            for (int i = 0; i < h; i++)
-            {
-                for (int j = 0; j < w; j++)
-                {
+    for (int step = 0; step < nsteps; step++) {
+        for (int ch = 0; ch < channels; ch++) {
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
                     double val = 0.0;
 
-                    for (int k = -displ; k <= displ; k++)
-                    {
-                        for (int l = -displ; l <= displ; l++)
-                        {
+                    for (int k = -displ; k <= displ; k++) {
+                        for (int l = -displ; l <= displ; l++) {
                             int cy = i + k;
                             int cx = j + l;
                             int src_val = 0;
 
                             // if it goes outside we disregard that value
-                            if (cx < 0 || cx > w - 1 || cy < 0 || cy > h - 1)
-                            {
+                            if (cx < 0 || cx > w - 1 || cy < 0 || cy > h - 1) {
                                 continue;
                             }
-                            else
-                            {
+                            else {
                                 src_val = src(ch, cy, cx);
                             }
 
@@ -204,8 +182,7 @@ void convolution_2d(Image &src, Image &dst, int kernel_width, double sigma, int 
             }
         }
 
-        if (step < nsteps - 1)
-        {
+        if (step < nsteps - 1) {
             // swap references
             // we can reuse the src buffer for this example
             Image tmp = src;
@@ -215,13 +192,13 @@ void convolution_2d(Image &src, Image &dst, int kernel_width, double sigma, int 
     }
 }
 
-void generate(Image &image, int n_steps = 20, const char *outputName = "Mandelbrot_parallel.ppm")
-{
+void generate(Image& image, int n_steps = 20, const char* outputName = "Mandelbrot_parallel.ppm") {
     Image filtered_image(image.channels, image.height, image.width);
     auto ratio = image.width / (double)image.height;
     int pixels_inside = 0;
-    auto duration = measure([&]()
-                            { pixels_inside = mandelbrot(image, ratio); });
+    auto duration = measure([&]() {
+        pixels_inside = mandelbrot(image, ratio);
+        });
 
     // TODO Use OpenMP tasking to implement a parallel version
     cout << "Mandelbrot time: " << duration << endl;
@@ -230,8 +207,7 @@ void generate(Image &image, int n_steps = 20, const char *outputName = "Mandelbr
     // Actual 2D convolution part
     // Use OpenMP tasking to implement a parallel version
 
-    auto duration2 = measure([&]()
-                             { convolution_2d(image, filtered_image, 5, 0.37, n_steps); });
+    auto duration2 = measure([&]() { convolution_2d(image, filtered_image, 5, 0.37, n_steps); });
 
     cout << "Convolution time: " << duration2 << endl;
     cout << "Total time: " << duration + duration2 << endl;
