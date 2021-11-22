@@ -11,19 +11,10 @@
 #include "lib/a2/a2-helpers.hpp"
 using namespace std;
 
-void foreach(Image const& image, function<void(int, int, Image image)> function) {
-    for (int j = 0; j < image.height; j++) {
-        for (int i = 0; i < image.width; i++) {
-            function(i, j, image);
-        }
-    }
-}
-
 double measure(function<void()> function) {
     auto t1 = chrono::high_resolution_clock::now();
     function();
     auto t2 = chrono::high_resolution_clock::now();
-
     return chrono::duration<double>(t2 - t1).count();
 }
 
@@ -80,19 +71,19 @@ bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) {
  *
 */
 int mandelbrot(Image& image, double ratio = 0.15) {
+    // reduction: gives each thread a private pixels_inside variable that is summed at the end
+    int pixels_inside = 0;
+    ratio /= 10.0;
     int channels = image.channels;
     int w = image.width;
     int h = image.height;
-    ratio /= 10.0;
-    // reduction: gives each thread a private pixels_inside variable that is summed at the end
-    int pixels_inside = 0;
+    vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
+    complex<double> c;
 
-    #pragma omp parallel shared(w, h, channels, image, ratio, pixels_inside)
+    #pragma omp parallel shared(image, ratio, pixels_inside) private (pixel, c)
     {
         #pragma omp single
         {
-            vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
-            complex<double> c;
             #pragma omp taskgroup
             {
                 for (int j = 0; j < h; j++) {
