@@ -96,7 +96,7 @@ int mandelbrot(Image& image, double ratio = 0.15) {
             #pragma omp taskgroup
             {
                 for (int j = 0; j < h; j++) {
-                    // pixel to be passed to the mandelbrot function
+
                     #pragma omp task shared(w, h, channels, image, ratio, pixels_inside)
                     {
                         for (int i = 0; i < w; i++) {
