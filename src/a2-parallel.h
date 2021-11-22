@@ -71,7 +71,6 @@ bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) {
  *
 */
 int mandelbrot(Image& image, double ratio = 0.15) {
-    // reduction: gives each thread a private pixels_inside variable that is summed at the end
     int pixels_inside = 0;
     ratio /= 10.0;
     int channels = image.channels;
@@ -139,40 +138,52 @@ void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int 
     std::vector<std::vector<double>> kernel = get_2d_kernel(kernel_width, kernel_width, sigma);
 
     int displ = (kernel.size() / 2); // height==width!
-    for (int step = 0; step < nsteps; step++) {
-        for (int ch = 0; ch < channels; ch++) {
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    double val = 0.0;
+    #pragma omp parallel shared(src, dst, displ)
+    {
+        #pragma omp single
+        {
+            for (int step = 0; step < nsteps; step++) {
+                #pragma omp taskgroup
+                {
+                    for (int ch = 0; ch < channels; ch++) {
+                        for (int i = 0; i < h; i++) {
+                            #pragma omp task
+                            {
+                                for (int j = 0; j < w; j++) {
+                                    double val = 0.0;
 
-                    for (int k = -displ; k <= displ; k++) {
-                        for (int l = -displ; l <= displ; l++) {
-                            int cy = i + k;
-                            int cx = j + l;
-                            int src_val = 0;
+                                    for (int k = -displ; k <= displ; k++) {
+                                        for (int l = -displ; l <= displ; l++) {
+                                            int cy = i + k;
+                                            int cx = j + l;
+                                            int src_val = 0;
 
-                            // if it goes outside we disregard that value
-                            if (cx < 0 || cx > w - 1 || cy < 0 || cy > h - 1) {
-                                continue;
+                                            // if it goes outside we disregard that value
+                                            if (cx < 0 || cx > w - 1 || cy < 0 || cy > h - 1) {
+                                                continue;
+                                            }
+                                            else {
+                                                src_val = src(ch, cy, cx);
+                                            }
+
+                                            val += kernel[k + displ][l + displ] * src_val;
+                                        }
+                                    }
+                                    dst(ch, i, j) = (int)(val > 255 ? 255 : (val < 0 ? 0 : val));
+                                }
                             }
-                            else {
-                                src_val = src(ch, cy, cx);
-                            }
-
-                            val += kernel[k + displ][l + displ] * src_val;
                         }
                     }
-                    dst(ch, i, j) = (int)(val > 255 ? 255 : (val < 0 ? 0 : val));
+                }
+
+                if (step < nsteps - 1) {
+                    // swap references
+                    // we can reuse the src buffer for this example
+                    Image tmp = src;
+                    src = dst;
+                    dst = tmp;
                 }
             }
-        }
-
-        if (step < nsteps - 1) {
-            // swap references
-            // we can reuse the src buffer for this example
-            Image tmp = src;
-            src = dst;
-            dst = tmp;
         }
     }
 }
