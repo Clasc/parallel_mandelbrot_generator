@@ -10,7 +10,11 @@
                 "isDefault": true
             },
             "type": "shell",
-            "command": "${workspaceFolder}/build.sh"
+            "command": "${workspaceFolder}/build.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
         },
         {
             "label": "test",
@@ -19,7 +23,11 @@
                 "isDefault": true
             },
             "type": "shell",
-            "command": "${workspaceFolder}/compare.sh"
+            "command": "${workspaceFolder}/compare.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
         }
     ]
 }
