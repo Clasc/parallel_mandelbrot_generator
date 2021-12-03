@@ -1,10 +1,12 @@
 {
     "files.associations": {
+        "*.m": "matlab",
         "chrono": "cpp",
         "cmath": "cpp",
         "complex": "cpp",
         "functional": "cpp",
         "iosfwd": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "vector": "cpp"
     },
 }
