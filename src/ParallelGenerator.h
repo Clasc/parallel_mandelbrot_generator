@@ -1,6 +1,7 @@
 #include <complex>
 #include <iostream>
 #include <fstream>
+#include "a2-utils.h"
 /**
  * Superclass for parallelgenerators of the mandelbrot set
  * */
@@ -8,8 +9,14 @@ class ParallelGenerator {
 private:
 public:
 
-    // prepares the algorithm, makes the 2d convolution, mearues the time and prints it and 
-    void generate(Image& image, int n_steps = 20, const char* outputName = "Mandelbrot_parallel.ppm") {
+    /**
+     * @brief  prepares the algorithm, makes the 2d convolution, measures the performance and saves the image to a file
+     *
+     * @param image The input image
+     * @param outputName name of the outputfile
+     * @param n_steps number of steps for the convolution
+     */
+    void generate(Image& image, const char* outputName = "Mandelbrot_parallel.ppm", int n_steps = 20) {
         Image filtered_image(image.channels, image.height, image.width);
         auto ratio = image.width / (double)image.height;
         int pixels_inside = 0;
