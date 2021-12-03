@@ -16,7 +16,7 @@ public:
      * @param outputName name of the outputfile
      * @param n_steps number of steps for the convolution
      */
-    void generate(Image& image, const char* outputName = "Mandelbrot_parallel.ppm", int n_steps = 20) {
+    void generate(Image image, const char* outputName = "Mandelbrot_parallel.ppm", int n_steps = 20) {
         Image filtered_image(image.channels, image.height, image.width);
         auto ratio = image.width / (double)image.height;
         int pixels_inside = 0;
