@@ -39,9 +39,6 @@ public:
     int mandelbrot(Image& image, double ratio = 0.15)override {
         int pixels_inside = 0;
         ratio /= 10.0;
-        int channels = image.channels;
-        int w = image.width;
-        int h = image.height;
         vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
         complex<double> c;
 
@@ -51,14 +48,14 @@ public:
             {
                 #pragma omp taskgroup
                 {
-                    for (int j = 0; j < h; j++) {
+                    for (int j = 0; j < image.height; j++) {
 
-                        #pragma omp task shared(w, h, channels, image, ratio, pixels_inside)
+                        #pragma omp task shared(image, ratio, pixels_inside)
                         {
-                            for (int i = 0; i < w; i++) {
+                            for (int i = 0; i < image.width; i++) {
 
-                                double dx = (double)i / (w)*ratio - 1.10;
-                                double dy = (double)j / (h) * 0.1 - 0.35;
+                                double dx = (double)i / (image.width) * ratio - 1.10;
+                                double dy = (double)j / (image.height) * 0.1 - 0.35;
 
                                 c = complex<double>(dx, dy);
 
@@ -70,7 +67,7 @@ public:
 
 
                                 // apply to the image
-                                for (int ch = 0; ch < channels; ch++)
+                                for (int ch = 0; ch < image.channels; ch++)
                                     image(ch, j, i) = pixel[ch];
                             }
                         }
@@ -82,12 +79,7 @@ public:
     }
 
     void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
-        int h = src.height;
-        int w = src.width;
-        int channels = src.channels;
-
         std::vector<std::vector<double>> kernel = get_2d_kernel(kernel_width, kernel_width, sigma);
-
         int displ = (kernel.size() / 2); // height==width!
         #pragma omp parallel shared(src, dst, displ)
         {
@@ -96,11 +88,11 @@ public:
                 for (int step = 0; step < nsteps; step++) {
                     #pragma omp taskgroup
                     {
-                        for (int ch = 0; ch < channels; ch++) {
-                            for (int i = 0; i < h; i++) {
+                        for (int ch = 0; ch < src.channels; ch++) {
+                            for (int i = 0; i < src.height; i++) {
                                 #pragma omp task
                                 {
-                                    for (int j = 0; j < w; j++) {
+                                    for (int j = 0; j < src.width; j++) {
                                         double val = 0.0;
 
                                         for (int k = -displ; k <= displ; k++) {
@@ -110,7 +102,7 @@ public:
                                                 int src_val = 0;
 
                                                 // if it goes outside we disregard that value
-                                                if (cx < 0 || cx > w - 1 || cy < 0 || cy > h - 1) {
+                                                if (cx < 0 || cx > src.width - 1 || cy < 0 || cy > src.height - 1) {
                                                     continue;
                                                 }
                                                 else {
@@ -173,9 +165,6 @@ public:
     int mandelbrot(Image& image, double ratio = 0.15) override {
         int pixels_inside = 0;
         ratio /= 10.0;
-        int channels = image.channels;
-        int w = image.width;
-        int h = image.height;
         vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
         complex<double> c;
 
@@ -184,12 +173,12 @@ public:
             #pragma omp single nowait
             {
                 #pragma omp taskloop shared(pixels_inside) 
-                for (int j = 0; j < h; j++) {
+                for (int j = 0; j < image.height; j++) {
                     #pragma omp taskloop shared(pixels_inside) 
-                    for (int i = 0; i < w; i++) {
+                    for (int i = 0; i < image.width; i++) {
 
-                        double dx = (double)i / (w)*ratio - 1.10;
-                        double dy = (double)j / (h) * 0.1 - 0.35;
+                        double dx = (double)i / (image.width) * ratio - 1.10;
+                        double dy = (double)j / (image.height) * 0.1 - 0.35;
 
                         c = complex<double>(dx, dy);
 
@@ -200,7 +189,7 @@ public:
                         }
 
                         // apply to the image
-                        for (int ch = 0; ch < channels; ch++)
+                        for (int ch = 0; ch < image.channels; ch++)
                             image(ch, j, i) = pixel[ch];
                     }
                 }
@@ -210,22 +199,17 @@ public:
     }
 
     void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
-        int h = src.height;
-        int w = src.width;
-        int channels = src.channels;
-
         std::vector<std::vector<double>> kernel = get_2d_kernel(kernel_width, kernel_width, sigma);
-
         int displ = (kernel.size() / 2); // height==width!
         #pragma omp parallel shared(src, dst, displ)
         {
             #pragma omp single nowait
             {
                 for (int step = 0; step < nsteps; step++) {
-                    for (int ch = 0; ch < channels; ch++) {
+                    for (int ch = 0; ch < src.channels; ch++) {
                         #pragma omp taskloop
-                        for (int i = 0; i < h; i++) {
-                            for (int j = 0; j < w; j++) {
+                        for (int i = 0; i < src.height; i++) {
+                            for (int j = 0; j < src.width; j++) {
                                 double val = 0.0;
                                 for (int k = -displ; k <= displ; k++) {
                                     for (int l = -displ; l <= displ; l++) {
@@ -234,7 +218,7 @@ public:
                                         int src_val = 0;
 
                                         // if it goes outside we disregard that value
-                                        if (cx < 0 || cx > w - 1 || cy < 0 || cy > h - 1) {
+                                        if (cx < 0 || cx > src.width - 1 || cy < 0 || cy > src.height - 1) {
                                             continue;
                                         }
                                         else {
