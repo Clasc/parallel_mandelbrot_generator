@@ -219,6 +219,7 @@ public:
                     for (int ch = 0; ch < channels; ch++) {
                         #pragma omp taskloop
                         for (int i = 0; i < h; i++) {
+                            #pragma omp taskloop
                             for (int j = 0; j < w; j++) {
                                 double val = 0.0;
                                 for (int k = -displ; k <= displ; k++) {
