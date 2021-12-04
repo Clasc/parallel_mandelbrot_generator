@@ -47,7 +47,7 @@ public:
 
         #pragma omp parallel shared(image, ratio, pixels_inside) private (pixel, c)
         {
-            #pragma omp single
+            #pragma omp single nowait
             {
                 #pragma omp taskgroup
                 {
@@ -91,7 +91,7 @@ public:
         int displ = (kernel.size() / 2); // height==width!
         #pragma omp parallel shared(src, dst, displ)
         {
-            #pragma omp single
+            #pragma omp single nowait
             {
                 for (int step = 0; step < nsteps; step++) {
                     #pragma omp taskgroup
@@ -181,7 +181,7 @@ public:
 
         #pragma omp parallel shared(image, ratio, pixels_inside) private(pixel, c)
         {
-            #pragma omp single
+            #pragma omp single nowait
             {
                 #pragma omp taskloop shared(pixels_inside) 
                 for (int j = 0; j < h; j++) {
@@ -219,7 +219,7 @@ public:
         int displ = (kernel.size() / 2); // height==width!
         #pragma omp parallel shared(src, dst, displ)
         {
-            #pragma omp single
+            #pragma omp single nowait
             {
                 for (int step = 0; step < nsteps; step++) {
                     for (int ch = 0; ch < channels; ch++) {
