@@ -8,6 +8,17 @@
         "iosfwd": "cpp",
         "ostream": "cpp",
         "vector": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "*.tcc": "cpp",
+        "numeric": "cpp",
+        "fstream": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "shared_mutex": "cpp",
+        "system_error": "cpp",
+        "regex": "cpp",
+        "typeindex": "cpp",
+        "typeinfo": "cpp",
+        "variant": "cpp"
     },
 }
