@@ -7,9 +7,11 @@
 using namespace std;
 
 class TasksGenerator : public ParallelGenerator {
-public:
+protected:
+    char const* getName() override { return "TasksGenerator"; }
 
-    bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) {
+public:
+    bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) override {
         int max_iterations = 2048, iteration = 0;
 
         complex<double> z(0, 0);
@@ -30,8 +32,7 @@ public:
         return (iteration < max_iterations);
     }
 
-
-    int mandelbrot(Image& image, double ratio = 0.15) {
+    int mandelbrot(Image& image, double ratio = 0.15)override {
         int pixels_inside = 0;
         ratio /= 10.0;
         int channels = image.channels;
@@ -76,9 +77,7 @@ public:
         return pixels_inside;
     }
 
-
-
-    void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) {
+    void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
         int h = src.height;
         int w = src.width;
         int channels = src.channels;
@@ -138,9 +137,11 @@ public:
 };
 
 class TaskloopGenerator : public ParallelGenerator {
-public:
+protected:
+    char const* getName() override { return "TaskloopGenerator"; }
 
-    bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) {
+public:
+    bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) override {
         int max_iterations = 2048, iteration = 0;
 
         complex<double> z(0, 0);
@@ -161,8 +162,7 @@ public:
         return (iteration < max_iterations);
     }
 
-
-    int mandelbrot(Image& image, double ratio = 0.15) {
+    int mandelbrot(Image& image, double ratio = 0.15) override {
         int pixels_inside = 0;
         ratio /= 10.0;
         int channels = image.channels;
@@ -201,9 +201,7 @@ public:
         return pixels_inside;
     }
 
-
-
-    void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) {
+    void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
         int h = src.height;
         int w = src.width;
         int channels = src.channels;
