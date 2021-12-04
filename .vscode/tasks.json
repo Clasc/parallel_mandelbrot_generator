@@ -23,7 +23,7 @@
                 "isDefault": true
             },
             "type": "shell",
-            "command": "${workspaceFolder}/compare.sh",
+            "command": "${workspaceFolder}/assert.sh",
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
