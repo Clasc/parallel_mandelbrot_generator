@@ -6,6 +6,10 @@
 
 using namespace std;
 
+/**
+ * @brief Use only Omp tasks for parallelization
+ *
+ */
 class TasksGenerator : public ParallelGenerator {
 protected:
     char const* getName() override { return "TasksGenerator"; }
@@ -136,6 +140,10 @@ public:
     }
 };
 
+/**
+ * @brief Use Omp taskloops for parallelization
+ *
+ */
 class TaskloopGenerator : public ParallelGenerator {
 protected:
     char const* getName() override { return "TaskloopGenerator"; }
