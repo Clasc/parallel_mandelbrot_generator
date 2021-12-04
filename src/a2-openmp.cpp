@@ -6,7 +6,9 @@ int main(int argc, char const* argv[]) {
     auto taskloops = TaskloopGenerator();
     std::cout << "Generating by Tasks..." << std::endl;
     tasks.generate(image);
+    std::cout << std::endl;
     std::cout << "Generating by Taskloop..." << std::endl;
     taskloops.generate(image, "Mandelbrot-taskloop.ppm");
+    std::cout << std::endl;
     return 0;
 }
