@@ -42,7 +42,7 @@ public:
         vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
         complex<double> c;
 
-        #pragma omp parallel shared(image, ratio, pixels_inside) private (pixel, c)
+        #pragma omp parallel 
         {
             #pragma omp single nowait
             {
@@ -50,7 +50,7 @@ public:
                 {
                     for (int j = 0; j < image.height; j++) {
 
-                        #pragma omp task shared(image, ratio, pixels_inside)
+                        #pragma omp task shared(image, ratio, pixels_inside) private(pixel, c) 
                         {
                             for (int i = 0; i < image.width; i++) {
 
@@ -64,7 +64,6 @@ public:
                                     #pragma omp atomic
                                     pixels_inside++;
                                 }
-
 
                                 // apply to the image
                                 for (int ch = 0; ch < image.channels; ch++)
@@ -81,7 +80,7 @@ public:
     void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
         std::vector<std::vector<double>> kernel = get_2d_kernel(kernel_width, kernel_width, sigma);
         int displ = (kernel.size() / 2); // height==width!
-        #pragma omp parallel shared(src, dst, displ)
+        #pragma omp parallel
         {
             #pragma omp single nowait
             {
@@ -90,7 +89,7 @@ public:
                     {
                         for (int ch = 0; ch < src.channels; ch++) {
                             for (int i = 0; i < src.height; i++) {
-                                #pragma omp task
+                                #pragma omp task shared(src, dst, displ, ch, i, step, kernel)
                                 {
                                     for (int j = 0; j < src.width; j++) {
                                         double val = 0.0;
@@ -172,9 +171,10 @@ public:
         {
             #pragma omp single nowait
             {
-                #pragma omp taskloop shared(pixels_inside) 
+                auto num_tasks = omp_get_num_threads() * 2;
+                #pragma omp taskloop shared(pixels_inside) num_tasks(num_tasks)
                 for (int j = 0; j < image.height; j++) {
-                    #pragma omp taskloop shared(pixels_inside) 
+                    #pragma omp taskloop shared(pixels_inside) num_tasks(num_tasks)
                     for (int i = 0; i < image.width; i++) {
 
                         double dx = (double)i / (image.width) * ratio - 1.10;
@@ -205,9 +205,10 @@ public:
         {
             #pragma omp single nowait
             {
+                auto num_tasks = omp_get_num_threads() * 2;
                 for (int step = 0; step < nsteps; step++) {
                     for (int ch = 0; ch < src.channels; ch++) {
-                        #pragma omp taskloop
+                        #pragma omp taskloop num_tasks(num_tasks) shared(src, dst, displ, ch, step, kernel)
                         for (int i = 0; i < src.height; i++) {
                             for (int j = 0; j < src.width; j++) {
                                 double val = 0.0;

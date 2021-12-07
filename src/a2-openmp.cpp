@@ -3,6 +3,7 @@
 int main(int argc, char const* argv[]) {
     auto image = Image(3, 1024, 1536);
     omp_set_num_threads(16);
+
     #pragma omp parallel
     {
         #pragma omp single
