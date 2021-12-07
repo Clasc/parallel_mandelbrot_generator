@@ -172,9 +172,9 @@ public:
             #pragma omp single nowait
             {
                 auto num_tasks = omp_get_num_threads() * 2;
-                #pragma omp taskloop shared(image, ratio, pixels_inside) private(pixel, c) num_tasks(num_tasks)
+                #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(num_tasks) reduction(+:pixels_inside)
                 for (int j = 0; j < image.height; j++) {
-                    #pragma omp taskloop shared(image, ratio, pixels_inside) private(pixel, c) num_tasks(num_tasks)
+                    #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(num_tasks) reduction(+:pixels_inside)
                     for (int i = 0; i < image.width; i++) {
 
                         double dx = (double)i / (image.width) * ratio - 1.10;
@@ -184,7 +184,6 @@ public:
 
                         // the actual mandelbrot kernel
                         if (mandelbrot_kernel(c, pixel)) {
-                            #pragma omp atomic
                             pixels_inside++;
                         }
 
