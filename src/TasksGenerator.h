@@ -37,44 +37,56 @@ public:
     }
 
     int mandelbrot(Image& image, double ratio = 0.15)override {
-        int pixels_inside = 0;
         ratio /= 10.0;
-        vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
-        complex<double> c;
-
-        #pragma omp parallel 
+        int pixels_inside = 0;
+        #pragma omp parallel
         {
-            #pragma omp single nowait
+            #pragma omp single
             {
+                auto num_tasks = omp_get_num_threads() * 3;
+                auto range = image.height / num_tasks;
+                auto lastRange = range + (image.height % num_tasks);
+                // std::cout << "range: " << range << std::endl << "lastRange:" << lastRange << std::endl << "num_Tasks:" << num_tasks << std::endl << std::endl;
                 #pragma omp taskgroup
                 {
-                    for (int j = 0; j < image.height; j++) {
-
-                        #pragma omp task shared(image, ratio, pixels_inside) private(pixel, c) 
+                    for (int t = 0; t < num_tasks; t++) {
+                        // std::cout << "t: " << t << std::endl << "currentRange: " << currentRange << std::endl << "currentEnd: " << currentEnd << std::endl << std::endl;
+                        #pragma omp task shared(image, ratio, pixels_inside, num_tasks, lastRange, range) firstprivate(t) 
                         {
-                            for (int i = 0; i < image.width; i++) {
-
-                                double dx = (double)i / (image.width) * ratio - 1.10;
-                                double dy = (double)j / (image.height) * 0.1 - 0.35;
-
-                                c = complex<double>(dx, dy);
-
-                                // the actual mandelbrot kernel
-                                if (mandelbrot_kernel(c, pixel)) {
-                                    #pragma omp atomic
-                                    pixels_inside++;
-                                }
-
-                                // apply to the image
-                                for (int ch = 0; ch < image.channels; ch++)
-                                    image(ch, j, i) = pixel[ch];
-                            }
+                            auto currentRange = t * range;
+                            auto currentEnd = currentRange + (t == num_tasks - 1 ? lastRange : range);
+                            appliMandelbrot(image, currentRange, currentEnd, ratio, pixels_inside);
                         }
                     }
                 }
             }
         }
         return pixels_inside;
+    }
+
+    void appliMandelbrot(Image& image, int start, int end, const float& ratio, int& pixels_inside) {
+        vector<int> pixel = { 0, 0, 0 }; // red, green, blue (each range 0-255)
+        complex<double> c;
+        // std::cout << "start:" << start << std::endl << "end:" << end << std::endl;
+        for (int j = start; j < end; j++) {
+            // std::cout << "j:" << j << std::endl;
+            for (int i = 0; i < image.width; i++) {
+                double dx = (double)i / (image.width) * ratio - 1.10;
+                double dy = (double)j / (image.height) * 0.1 - 0.35;
+
+                c = complex<double>(dx, dy);
+
+                // the actual mandelbrot kernel
+                if (mandelbrot_kernel(c, pixel)) {
+                    #pragma omp atomic
+                    pixels_inside++;
+                }
+
+                // apply to the image
+                for (int ch = 0; ch < image.channels; ch++)
+                    image(ch, j, i) = pixel[ch];
+            }
+        }
     }
 
     void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
