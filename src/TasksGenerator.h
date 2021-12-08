@@ -174,9 +174,9 @@ public:
         {
             #pragma omp single nowait
             {
-                #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(max_tasks) reduction(+:pixels_inside)
+                #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(max_tasks) reduction(+:pixels_inside) untied
                 for (int j = 0; j < image.height; j++) {
-                    #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(max_tasks) reduction(+:pixels_inside)
+                    #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(max_tasks) reduction(+:pixels_inside) untied
                     for (int i = 0; i < image.width; i++) {
 
                         double dx = (double)i / (image.width) * ratio - 1.10;
@@ -208,7 +208,7 @@ public:
             {
                 for (int step = 0; step < nsteps; step++) {
                     for (int ch = 0; ch < src.channels; ch++) {
-                        #pragma omp taskloop num_tasks(max_tasks) shared(src, dst, displ, ch, step, kernel)
+                        #pragma omp taskloop num_tasks(max_tasks) shared(src, dst, displ, ch, step, kernel) untied
                         for (int i = 0; i < src.height; i++) {
                             for (int j = 0; j < src.width; j++) {
                                 double val = 0.0;
