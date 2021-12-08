@@ -46,16 +46,15 @@ public:
         {
             #pragma omp single nowait
             {
+                auto max_tasks = omp_get_thread_num() * 4;
                 #pragma omp taskgroup
                 {
                     for (int j = 0; j < image.height; j++) {
-
-                        #pragma omp task shared(image, ratio, pixels_inside) private(pixel, c) 
+                        double dy = (double)j / (image.height) * 0.1 - 0.35;
+                        #pragma omp task shared(image, ratio, pixels_inside) firstprivate(dy) private(pixel, c) untied final(j > max_tasks)
                         {
                             for (int i = 0; i < image.width; i++) {
-
                                 double dx = (double)i / (image.width) * ratio - 1.10;
-                                double dy = (double)j / (image.height) * 0.1 - 0.35;
 
                                 c = complex<double>(dx, dy);
 
@@ -80,16 +79,18 @@ public:
     void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) override {
         std::vector<std::vector<double>> kernel = get_2d_kernel(kernel_width, kernel_width, sigma);
         int displ = (kernel.size() / 2); // height==width!
+
         #pragma omp parallel
         {
             #pragma omp single nowait
             {
+                auto max_tasks = omp_get_thread_num() * 4;
                 for (int step = 0; step < nsteps; step++) {
                     #pragma omp taskgroup
                     {
                         for (int ch = 0; ch < src.channels; ch++) {
                             for (int i = 0; i < src.height; i++) {
-                                #pragma omp task shared(src, dst, displ, ch, i, step, kernel)
+                                #pragma omp task shared(src, dst, displ, ch, i, step, kernel) untied final(i > max_tasks)
                                 {
                                     for (int j = 0; j < src.width; j++) {
                                         double val = 0.0;
