@@ -6,8 +6,6 @@ int main(int argc, char const* argv[]) {
     int threads;
     int tasks_per_thread;
 
-    std::cout << "argc" << argc << std::endl;
-
     if (argc >= 3) {
         std::istringstream input_threads(argv[1]);
         std::istringstream input_max_t(argv[2]);
