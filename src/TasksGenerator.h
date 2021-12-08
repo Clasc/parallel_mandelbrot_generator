@@ -19,6 +19,7 @@ public:
         int max_iterations = 2048, iteration = 0;
 
         complex<double> z(0, 0);
+
         for (; iteration < max_iterations && abs(z) <= 4; iteration++) {
             z = z * z + c;
         }
@@ -26,9 +27,8 @@ public:
         double log_len = log(sqrt(z.real() * z.real() + z.imag() * z.imag()));
         double log_2 = log(2.0);
         long double m = (iteration + 1 - log_len / log_2);
-        double q = m / (double)max_iterations;
 
-        q = iteration + 1 - log(log_len) / log_2;
+        auto q = iteration + 1 - log(log_len) / log_2;
         q /= max_iterations;
 
         colorize(pixel, q, iteration, gradients);
