@@ -8,6 +8,12 @@
 class ParallelGenerator {
 protected:
     /**
+     * @brief The maximum number of tasks that are generated.
+     *
+     */
+    const int max_tasks;
+
+    /**
      * @brief The name of the Geneartor. Used for labelling in logging. Has no function.
      *
      */
@@ -46,6 +52,8 @@ protected:
     */
     virtual void convolution_2d(Image& src, Image& dst, int kernel_width, double sigma, int nsteps = 1) = 0;
 public:
+    ParallelGenerator(int max_tasks) :max_tasks{ max_tasks } { std::cout << "initialized max_tasks: " << this->max_tasks << std::endl; };
+
     /**
      * @brief  prepares the algorithm, makes the 2d convolution, measures the performance and saves the image to a file
      *

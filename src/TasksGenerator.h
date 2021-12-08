@@ -15,6 +15,8 @@ protected:
     char const* getName() override { return "TasksGenerator"; }
 
 public:
+    TasksGenerator(int max_tasks) :ParallelGenerator(max_tasks) {}
+
     bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) override {
         int max_iterations = 2048, iteration = 0;
 
@@ -46,7 +48,6 @@ public:
         {
             #pragma omp single nowait
             {
-                auto max_tasks = omp_get_thread_num() * 4;
                 #pragma omp taskgroup
                 {
                     for (int j = 0; j < image.height; j++) {
@@ -84,7 +85,6 @@ public:
         {
             #pragma omp single nowait
             {
-                auto max_tasks = omp_get_thread_num() * 4;
                 for (int step = 0; step < nsteps; step++) {
                     #pragma omp taskgroup
                     {
@@ -141,6 +141,8 @@ protected:
     char const* getName() override { return "TaskloopGenerator"; }
 
 public:
+    TaskloopGenerator(int max_tasks) :ParallelGenerator(max_tasks) {}
+
     bool mandelbrot_kernel(complex<double> c, vector<int>& pixel) override {
         int max_iterations = 2048, iteration = 0;
 
@@ -172,10 +174,9 @@ public:
         {
             #pragma omp single nowait
             {
-                auto num_tasks = omp_get_num_threads() * 2;
-                #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(num_tasks) reduction(+:pixels_inside)
+                #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(max_tasks) reduction(+:pixels_inside)
                 for (int j = 0; j < image.height; j++) {
-                    #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(num_tasks) reduction(+:pixels_inside)
+                    #pragma omp taskloop shared(image, ratio) private(pixel, c) num_tasks(max_tasks) reduction(+:pixels_inside)
                     for (int i = 0; i < image.width; i++) {
 
                         double dx = (double)i / (image.width) * ratio - 1.10;
@@ -205,10 +206,9 @@ public:
         {
             #pragma omp single nowait
             {
-                auto num_tasks = omp_get_num_threads() * 2;
                 for (int step = 0; step < nsteps; step++) {
                     for (int ch = 0; ch < src.channels; ch++) {
-                        #pragma omp taskloop num_tasks(num_tasks) shared(src, dst, displ, ch, step, kernel)
+                        #pragma omp taskloop num_tasks(max_tasks) shared(src, dst, displ, ch, step, kernel)
                         for (int i = 0; i < src.height; i++) {
                             for (int j = 0; j < src.width; j++) {
                                 double val = 0.0;
